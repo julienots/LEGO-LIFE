@@ -171,35 +171,39 @@
   // Torse avant : combinaison bleu foncé, motif argenté en ailes autour d'un médaillon or (bas du torse)
   const torsoFrontTex = canvasTex(256, 256, (g, w, h) => {
     g.fillStyle = '#0a2c5a'; g.fillRect(0, 0, w, h);
-    const cy = 206;
-    g.strokeStyle = '#b9c2cc'; g.lineCap = 'round';
+    const cy = 204, S = '#b9c2cc';
+    g.fillStyle = '#071f42';  // V plus sombre au centre
+    g.beginPath(); g.moveTo(40, 150); g.quadraticCurveTo(128, 214, 216, 150); g.lineTo(128, 196); g.closePath(); g.fill();
     for (const s of [-1, 1]) {
       const X = x => 128 + s * x;
-      // ailes : deux traits qui montent vers les côtés, deux qui descendent
-      g.lineWidth = 8;
-      g.beginPath(); g.moveTo(X(16), cy - 2); g.quadraticCurveTo(X(50), cy - 10, X(100), cy - 34); g.stroke();
-      g.lineWidth = 5;
-      g.beginPath(); g.moveTo(X(18), cy - 8); g.quadraticCurveTo(X(46), cy - 26, X(70), cy - 40); g.stroke();
-      g.lineWidth = 6;
-      g.beginPath(); g.moveTo(X(16), cy + 4); g.quadraticCurveTo(X(50), cy + 10, X(104), cy + 30); g.stroke();
-      // plumes
-      g.lineWidth = 8;
+      g.fillStyle = S;
+      // grande aile effilée : du coin haut jusqu'au médaillon
+      g.beginPath();
+      g.moveTo(X(122), 142); g.lineTo(X(104), 142);
+      g.quadraticCurveTo(X(58), 168, X(20), cy - 7);
+      g.lineTo(X(18), cy + 2);
+      g.quadraticCurveTo(X(66), 186, X(122), 162);
+      g.closePath(); g.fill();
+      // trait fin qui part du médaillon vers le bas/l'extérieur
+      g.beginPath();
+      g.moveTo(X(16), cy + 4); g.quadraticCurveTo(X(60), cy + 8, X(118), cy + 30);
+      g.lineTo(X(118), cy + 40); g.quadraticCurveTo(X(60), cy + 17, X(16), cy + 10);
+      g.closePath(); g.fill();
+      // plumes : groupe du haut et groupe du bas, sur les côtés
+      g.strokeStyle = S; g.lineCap = 'round';
       for (let k = 0; k < 3; k++) {
-        g.beginPath();
-        g.moveTo(X(62 + k * 12), cy - 18 + k * 2);
-        g.lineTo(X(74 + k * 12), cy - 2 + k * 2);
-        g.stroke();
+        g.lineWidth = 9 - k;
+        g.beginPath(); g.moveTo(X(118 - k * 4), 168 + k * 11); g.lineTo(X(80 - k * 2), 160 + k * 13); g.stroke();
       }
       for (let k = 0; k < 2; k++) {
-        g.beginPath();
-        g.moveTo(X(70 + k * 14), cy + 18 + k * 4);
-        g.lineTo(X(84 + k * 14), cy + 30 + k * 4);
-        g.stroke();
+        g.lineWidth = 8;
+        g.beginPath(); g.moveTo(X(118), 222 + k * 11); g.lineTo(X(84 + k * 6), 214 + k * 12); g.stroke();
       }
     }
     g.fillStyle = '#d9c27e';
-    g.beginPath(); g.ellipse(128, cy, 17, 10, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(128, cy, 19, 11, 0, 0, Math.PI * 2); g.fill();
     g.strokeStyle = '#8a7440'; g.lineWidth = 2; g.stroke();
+    g.fillStyle = '#082448'; g.fillRect(0, 246, 256, 10);
   });
   // Jambes avant : bande argentée sur le bord extérieur, qui rentre vers l'intérieur en bas
   function legTex(side) {
@@ -215,8 +219,8 @@
   // Cheveux : mèches verticales
   const hairTex = canvasTex(512, 128, (g, w, h) => {
     g.fillStyle = '#3d2416'; g.fillRect(0, 0, w, h);
-    for (let x = 0; x < w; x += 6) {
-      g.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,.35)' : 'rgba(110,70,50,.22)';
+    for (let x = 0; x < w; x += 14) {
+      g.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,.16)' : 'rgba(120,80,55,.12)';
       g.fillRect(x, 0, 2 + rnd() * 2, h);
     }
   });
@@ -253,6 +257,41 @@
       lights.forEach(l => (l.intensity = 1.3 * pulse));
       if (extraLight) extraLight.intensity = 1.8 * pulse;
     };
+  }
+
+  // Bras de minifig : attaché sur le côté du torse (pas dedans), incliné vers l'extérieur comme le torse,
+  // coude plié vers l'avant, main en C ouverte vers l'avant. Renvoie le pivot d'épaule et le centre de la main.
+  function buildArm(s, parent, neckY, armMat, handMat) {
+    const pivot = new THREE.Group();
+    pivot.position.set(s * 0.83, neckY - 0.2, 0);
+    pivot.rotation.z = s * 0.16;
+    parent.add(pivot);
+    const sh = mesh(new THREE.SphereGeometry(0.24, 20, 14), armMat, pivot, 0, 0, 0); // épaule arrondie
+    sh.scale.set(0.95, 1, 1.05);
+    const upper = mesh(new THREE.CapsuleGeometry(0.215, 0.42, 6, 18), armMat, pivot, 0, -0.3, 0);
+    upper.scale.set(0.92, 1, 1);
+    const fore = new THREE.Group();
+    fore.position.y = -0.58;
+    fore.rotation.x = -0.55;                      // coude vers l'avant
+    pivot.add(fore);
+    mesh(new THREE.CapsuleGeometry(0.195, 0.34, 6, 18), armMat, fore, 0, -0.2, 0).scale.set(0.92, 1, 1);
+    const wrist = new THREE.Group();
+    wrist.position.y = -0.46;
+    wrist.rotation.set(0.55, 0, 0);               // main remise droite
+    fore.add(wrist);
+    const wristRoll = new THREE.Group();
+    wristRoll.rotation.z = -s * 0.16;             // annule l'inclinaison du bras
+    wrist.add(wristRoll);
+    mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.14, 14), handMat, wristRoll, 0, 0, 0);
+    const handC = new THREE.Group();
+    handC.position.set(0, -0.2, 0.02);
+    wristRoll.add(handC);
+    // C vu de face (axe de la pince vers l'avant), ouverture vers le bas/l'extérieur
+    const gap = s > 0 ? -Math.PI / 4 : -3 * Math.PI / 4;
+    const c = mesh(new THREE.TorusGeometry(0.15, 0.07, 12, 24, Math.PI * 1.6), handMat, handC, 0, 0, 0);
+    c.rotation.z = gap - 1.8 * Math.PI;
+    c.scale.z = 1.25;
+    return { pivot, handC };
   }
 
   // ---------- Perso 1 : Jor-El (auras rouges mains + pieds) ----------
@@ -313,29 +352,11 @@
     const discStudGeo = new THREE.CylinderGeometry(0.235, 0.235, 0.1, 24);
     const discHoleGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.02, 16);
     for (const s of [-1, 1]) {
-      const pivot = new THREE.Group();
-      pivot.position.set(s * 0.64, neckY - 0.24, 0);
-      pivot.rotation.z = s * 0.1;
-      body.add(pivot);
-      mesh(new THREE.SphereGeometry(0.215, 18, 12), blue, pivot, 0, 0, 0);
-      mesh(new THREE.CylinderGeometry(0.215, 0.2, 0.62, 18), blue, pivot, 0, -0.31, 0);
-      const fore = new THREE.Group();
-      fore.position.y = -0.6;
-      fore.rotation.x = -0.75; // avant-bras vers l'avant
-      pivot.add(fore);
-      mesh(new THREE.SphereGeometry(0.2, 18, 12), blue, fore, 0, 0, 0);
-      mesh(new THREE.CylinderGeometry(0.2, 0.18, 0.4, 18), blue, fore, 0, -0.2, 0);
-      const wrist = new THREE.Group();
-      wrist.position.y = -0.42;
-      wrist.rotation.x = 0.75;
-      fore.add(wrist);
-      mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.14, 12), flesh, wrist, 0, 0, 0);
-      const hand = mesh(new THREE.TorusGeometry(0.15, 0.075, 10, 20, Math.PI * 1.55), flesh, wrist, 0, -0.14, 0.02);
-      hand.rotation.set(0, Math.PI / 2, Math.PI * 0.72);
-      const disc = new THREE.Group();
-      disc.position.set(s * 0.12, -0.16, 0.2);
+      const { pivot, handC } = buildArm(s, body, neckY, blue, flesh);
+      const disc = new THREE.Group();          // plaque ronde 1x1 tenue face vers l'avant
+      disc.position.set(0, 0, 0.16);
       disc.rotation.x = Math.PI / 2;
-      wrist.add(disc);
+      handC.add(disc);
       mesh(discGeo, transRed, disc, 0, 0, 0).castShadow = false;
       mesh(discStudGeo, transRed, disc, 0, 0.115, 0).castShadow = false;
       mesh(discHoleGeo, transRedDeep, disc, 0, 0.17, 0).castShadow = false;
@@ -351,37 +372,43 @@
     mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.86, 48, 1, false, Math.PI, Math.PI * 2),
       [plastic(0xffffff, { map: faceTex }), flesh, flesh], head, 0, 0.14 + 0.43, 0);
 
-    // Cheveux brun foncé : volumineux, couvrent les oreilles, descendent sur la nuque
-    const hairMat = plastic(0xffffff, { map: hairTex, roughness: 0.4, envMapIntensity: 0.45, side: THREE.DoubleSide });
+    // Cheveux brun foncé : très volumineux sur le dessus, plus larges que la tête,
+    // mèche balayée devant, côtés qui retombent jusqu'aux yeux, arrière jusqu'à la nuque
+    const hairMat = plastic(0xffffff, { map: hairTex, roughness: 0.3, envMapIntensity: 0.55, side: THREE.DoubleSide });
     const HB = 0.14; // bas de la tête
-    const dome = mesh(new THREE.SphereGeometry(0.6, 48, 20, 0, Math.PI * 2, 0, Math.PI / 2), hairMat, head, 0, HB + 0.8, -0.02);
-    dome.scale.set(1.02, 0.66, 1.04);
+    const HR = 0.6; // rayon des cheveux
+    const dome = mesh(new THREE.SphereGeometry(HR, 48, 20, 0, Math.PI * 2, 0, Math.PI / 2), hairMat, head, 0, 0.94, -0.03);
+    dome.scale.set(1.0, 0.8, 1.05);
     {
-      // calotte : ouverture devant pour le visage, côtés jusqu'aux yeux, arrière jusqu'à la nuque
-      const OPEN = 0.95; // demi-ouverture du visage (rad)
-      const geo = new THREE.CylinderGeometry(0.58, 0.55, 1, 48, 6, true, OPEN, Math.PI * 2 - 2 * OPEN);
+      const OPEN = 0.86; // demi-ouverture du visage (rad)
+      const geo = new THREE.CylinderGeometry(HR, HR, 1, 56, 8, true, OPEN, Math.PI * 2 - 2 * OPEN);
       const p = geo.attributes.position;
       for (let i = 0; i < p.count; i++) {
-        const x = p.getX(i), z = p.getZ(i), y = p.getY(i) + 0.5; // 0 bas .. 1 haut
-        const back = Math.max(0, -z / Math.hypot(x, z));              // 1 derrière, 0 sur les côtés
-        const bottom = HB + 0.44 - back * 0.4;
-        const top = HB + 0.82;
-        p.setY(i, bottom + (top - bottom) * y);
-        const flare = 1 + (1 - y) * 0.03 * (1 - back);
-        p.setX(i, x * flare); p.setZ(i, z * flare - 0.02);
+        const x = p.getX(i), z = p.getZ(i), y = p.getY(i) + 0.5;   // 0 bas .. 1 haut
+        const back = Math.max(0, -z / HR);                          // 1 derrière
+        const bottom = 0.58 - back * 0.34;
+        p.setY(i, bottom + (0.95 - bottom) * y);
+        const flare = 1 + (1 - y) * 0.03 + Math.sin(Math.atan2(x, z) * 9) * 0.015; // mèches
+        p.setX(i, x * flare); p.setZ(i, z * flare * 1.02 - 0.03);
       }
       geo.computeVertexNormals();
       mesh(geo, hairMat, head, 0, 0, 0);
+      // remplissage entre la tête et les cheveux (évite le vide sur les côtés)
+      mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.5, 32, 1, true, OPEN + 0.2, Math.PI * 2 - 2 * OPEN - 0.4), hairMat, head, 0, 0.72, -0.02);
+      // pointes des pattes qui touchent les joues
+      for (const s of [-1, 1]) {
+        const tip = mesh(new THREE.ConeGeometry(0.09, 0.22, 10), hairMat, head, s * 0.47, 0.6, 0.3);
+        tip.rotation.set(0, 0, Math.PI + s * 0.15);
+        tip.scale.z = 0.6;
+      }
     }
-    // mèches avant balayées
-    const swoop1 = mesh(new THREE.SphereGeometry(0.3, 24, 12), hairMat, head, -0.2, HB + 0.86, 0.36);
-    swoop1.scale.set(1.3, 0.62, 0.75); swoop1.rotation.z = 0.25;
-    const swoop2 = mesh(new THREE.SphereGeometry(0.28, 24, 12), hairMat, head, 0.24, HB + 0.88, 0.34);
-    swoop2.scale.set(1.2, 0.56, 0.75); swoop2.rotation.z = -0.2;
-    for (const s of [-1, 1]) { // mèches tombant sur les tempes
-      const side = mesh(new THREE.SphereGeometry(0.2, 16, 10), hairMat, head, s * 0.5, HB + 0.66, 0.14);
-      side.scale.set(0.45, 1.0, 0.9);
-    }
+    // mèche avant balayée en vague
+    const swoop1 = mesh(new THREE.SphereGeometry(0.34, 28, 14), hairMat, head, -0.18, 1.0, 0.32);
+    swoop1.scale.set(1.15, 0.55, 0.7); swoop1.rotation.z = 0.3;
+    const swoop2 = mesh(new THREE.SphereGeometry(0.3, 28, 14), hairMat, head, 0.22, 0.98, 0.34);
+    swoop2.scale.set(1.1, 0.5, 0.68); swoop2.rotation.z = -0.25;
+    const swoop3 = mesh(new THREE.SphereGeometry(0.22, 20, 12), hairMat, head, 0.02, 0.95, 0.4);
+    swoop3.scale.set(1.3, 0.5, 0.6);
 
     // Armure or perlé : épaulières en V qui montent vers l'extérieur + plastron avec plaque ronde transparente
     const armor = new THREE.Group();
@@ -402,18 +429,18 @@
     }
     {
       const sh = new THREE.Shape();
-      sh.moveTo(-0.5, 0.0); sh.lineTo(0.5, 0.0); sh.lineTo(0.54, -0.5);
-      sh.lineTo(0.42, -0.74); sh.lineTo(-0.42, -0.74); sh.lineTo(-0.54, -0.5); sh.closePath();
+      sh.moveTo(-0.5, 0.0); sh.lineTo(0.5, 0.0); sh.lineTo(0.54, -0.46);
+      sh.lineTo(0.42, -0.68); sh.lineTo(-0.42, -0.68); sh.lineTo(-0.54, -0.46); sh.closePath();
       const geo = new THREE.ExtrudeGeometry(sh, Object.assign({ depth: 0.18 }, bevel));
       mesh(geo, gold, armor, 0, 0, 0.36);
-      const ring = mesh(new THREE.TorusGeometry(0.32, 0.045, 12, 40), gold, armor, 0, -0.38, 0.6);
+      const ring = mesh(new THREE.TorusGeometry(0.3, 0.045, 12, 40), gold, armor, 0, -0.35, 0.6);
     }
     const clear = new THREE.MeshStandardMaterial({ color: 0xfff6e0, roughness: 0.03, metalness: 0.1, transparent: true, opacity: 0.32 });
     const gem = new THREE.Group();
-    gem.position.set(0, -0.38, 0.6);
+    gem.position.set(0, -0.35, 0.6);
     gem.rotation.x = Math.PI / 2;
     armor.add(gem);
-    mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 32), clear, gem, 0, 0, 0);
+    mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.1, 32), clear, gem, 0, 0, 0);
     mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.09, 28), clear, gem, 0, 0.09, 0);
     mesh(new THREE.TorusGeometry(0.2, 0.012, 8, 32), clear, gem, 0, 0.135, 0).rotation.x = Math.PI / 2;
 
@@ -607,30 +634,12 @@
     const auraAnchors = [];
     const transClear = new THREE.MeshStandardMaterial({ color: 0xe8f6ff, emissive: 0x6fb8ff, emissiveIntensity: 0.6, roughness: 0.03, transparent: true, opacity: 0.45 });
     for (const s of [-1, 1]) {
-      const pivot = new THREE.Group();
-      pivot.position.set(s * 0.64, neckY - 0.24, 0);
-      pivot.rotation.z = s * 0.1;
-      body.add(pivot);
-      mesh(new THREE.SphereGeometry(0.215, 18, 12), flatSilver, pivot, 0, 0, 0);
-      mesh(new THREE.CylinderGeometry(0.215, 0.2, 0.62, 18), flatSilver, pivot, 0, -0.31, 0);
-      const fore = new THREE.Group();
-      fore.position.y = -0.6;
-      fore.rotation.x = -0.75;
-      pivot.add(fore);
-      mesh(new THREE.SphereGeometry(0.2, 18, 12), flatSilver, fore, 0, 0, 0);
-      mesh(new THREE.CylinderGeometry(0.2, 0.18, 0.4, 18), flatSilver, fore, 0, -0.2, 0);
-      const wrist = new THREE.Group();
-      wrist.position.y = -0.42;
-      wrist.rotation.x = 0.75;
-      fore.add(wrist);
-      mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.14, 12), navy, wrist, 0, 0, 0);
-      const hand = mesh(new THREE.TorusGeometry(0.15, 0.075, 10, 20, Math.PI * 1.55), navy, wrist, 0, -0.14, 0.02);
-      hand.rotation.set(0, Math.PI / 2, Math.PI * 0.72);
+      const { pivot, handC } = buildArm(s, body, neckY, flatSilver, navy);
       if (s < 0) {
         const disc = new THREE.Group();
-        disc.position.set(-0.12, -0.16, 0.2);
+        disc.position.set(0, 0, 0.16);
         disc.rotation.x = Math.PI / 2;
-        wrist.add(disc);
+        handC.add(disc);
         mesh(new THREE.CylinderGeometry(0.37, 0.37, 0.13, 28), transClear, disc, 0, 0, 0).castShadow = false;
         mesh(new THREE.CylinderGeometry(0.235, 0.235, 0.1, 24), transClear, disc, 0, 0.115, 0).castShadow = false;
         mesh(new THREE.TorusGeometry(0.3, 0.012, 8, 32), transClear, disc, 0, 0.066, 0).rotation.x = Math.PI / 2;
@@ -668,40 +677,59 @@
     mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.14, 16), flatSilver, head, 0, 0.07, 0);
     mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.86, 48, 1, false, Math.PI, Math.PI * 2), [faceMat, flatSilver, flatSilver], head, 0, 0.57, 0);
 
-    // --- Capuche marron : sommet arrondi, ouverture du visage, drapé sur les épaules avec pointe devant ---
+    // --- Capuche marron : grosse coque arrondie plus haute que la tête, plus longue derrière,
+    //     ouverture en arche pour le visage, col épais qui retombe sur les épaules avec un rabat devant ---
     const hood = new THREE.Group();
     head.add(hood);
     {
-      // une seule coque sphérique : fermée en haut, ouverte devant pour le visage
-      const R = 0.66, CY = 0.6, OPEN = 0.8;
-      const shell = (t0, t1, p0, pl) => {
-        const m = mesh(new THREE.SphereGeometry(R, 48, 24, p0, pl, t0, t1 - t0), hoodMat, hood, 0, CY, -0.03);
-        m.scale.set(1, 1.18, 1.06);
-        return m;
+      const T_LOW = 0.43 * Math.PI;
+      // position d'un point de la capuche : theta (0 = sommet) et a (angle autour, 0 = devant)
+      const hoodPoint = (theta, a) => {
+        const dx = Math.sin(a), dz = Math.cos(a);
+        let y, r, t = 0;
+        if (theta <= Math.PI / 2) { y = 0.66 + 0.6 * Math.cos(theta) + 0.07 * Math.pow(Math.cos(theta), 4); r = Math.sin(theta); }
+        else { t = (theta - Math.PI / 2) / T_LOW; y = 0.66 - t * 0.74; r = 1 + 0.14 * t * t; }
+        const rx = 0.64 * r * (1 + 0.1 * t * t);
+        const rz = (dz < 0 ? 0.76 : 0.64) * r * (1 - 0.12 * t);
+        y -= 0.28 * t * t * t * Math.pow(Math.max(0, dz), 4);     // rabat devant sur la poitrine
+        y += 0.06 * Math.max(0, -dz) * (1 - t) * Math.min(1, theta / 0.8); // arrière un peu plus haut
+        return new THREE.Vector3(dx * rx, y, dz * rz - 0.05);
       };
-      shell(0, Math.PI * 0.3, 0, Math.PI * 2);
-      // phi = PI/2 regarde vers +z (devant) : on laisse un trou de ±OPEN autour
-      shell(Math.PI * 0.29, Math.PI * 0.74, Math.PI / 2 + OPEN, Math.PI * 2 - 2 * OPEN);
-      // rebord épais autour du visage
-      const rim = mesh(new THREE.TorusGeometry(0.5, 0.075, 10, 32, Math.PI * 1.25), hoodMat, hood, 0, 0.5, 0.38);
-      rim.rotation.set(-0.2, 0, -Math.PI * 0.125);
-      rim.scale.set(1, 1.05, 1);
-    }
-    {
-      // drapé sur les épaules
-      const geo = new THREE.CylinderGeometry(0.62, 0.86, 0.46, 48, 4, true);
-      const p = geo.attributes.position;
-      for (let i = 0; i < p.count; i++) {
-        const x = p.getX(i), z = p.getZ(i), y = p.getY(i);
-        const ang = Math.atan2(x, z);           // 0 = devant
-        if (y < 0) {
-          const front = Math.pow(Math.max(0, Math.cos(ang)), 6);
-          p.setY(i, y - front * 0.28 + Math.sin(ang * 5) * 0.03);
-          p.setZ(i, z * 0.82);                  // épaules plus larges que profondes
-        } else p.setZ(i, z * 0.95);
+      const thetaAtY = (y) => y >= 0.66 ? Math.acos(Math.min(1, (y - 0.66) / 0.62)) : Math.PI / 2 + T_LOW * (0.66 - y) / 0.74;
+      const OPEN_BOT = 0.17, OPEN_TOP = 0.98;
+      const openA = (y) => y < 0.74 ? 0.6 : 0.6 * Math.sqrt(Math.max(0, 1 - ((y - 0.74) / (OPEN_TOP - 0.74)) ** 2));
+
+      const base = new THREE.SphereGeometry(1, 96, 48, 0, Math.PI * 2, 0, Math.PI / 2 + T_LOW).toNonIndexed();
+      const src = base.attributes.position;
+      const out = [];
+      const tri = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+      for (let i = 0; i < src.count; i += 3) {
+        for (let k = 0; k < 3; k++) {
+          const ux = src.getX(i + k), uy = src.getY(i + k), uz = src.getZ(i + k);
+          tri[k].copy(hoodPoint(Math.acos(Math.max(-1, Math.min(1, uy))), Math.atan2(ux, uz)));
+        }
+        const cx = (tri[0].x + tri[1].x + tri[2].x) / 3, cy = (tri[0].y + tri[1].y + tri[2].y) / 3, cz = (tri[0].z + tri[1].z + tri[2].z) / 3;
+        const a = Math.atan2(cx, cz + 0.05);
+        if (cy > OPEN_BOT && cy < OPEN_TOP && Math.abs(a) < openA(cy)) continue; // ouverture du visage
+        for (const v of tri) out.push(v.x, v.y, v.z);
       }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
       geo.computeVertexNormals();
-      mesh(geo, hoodMat, hood, 0, 0.0, 0);
+      mesh(geo, hoodMat, hood, 0, 0, 0);
+
+      // bord épais tout autour de l'ouverture
+      const pts = [];
+      const N = 24;
+      for (let i = 0; i <= N; i++) {            // côté droit de bas en haut, arche, côté gauche
+        const y = OPEN_BOT + (OPEN_TOP - OPEN_BOT) * Math.sin((i / N) * Math.PI / 2);
+        pts.push(hoodPoint(thetaAtY(y), -openA(y)));
+      }
+      for (let i = N - 1; i >= 0; i--) {
+        const y = OPEN_BOT + (OPEN_TOP - OPEN_BOT) * Math.sin((i / N) * Math.PI / 2);
+        pts.push(hoodPoint(thetaAtY(y), openA(y)));
+      }
+      mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 80, 0.055, 8, false), hoodMat, hood, 0, 0, 0);
     }
 
     const auraAnim = addAuras(auraAnchors, 0x9fdcff, auraAnchors, null);
