@@ -1,7 +1,10 @@
 # LEGO POWERS
 
-Jeu 3D avec mes propres minifigs LEGO. Prototype v0.1 : un seul personnage (le Jor-El de ma collection,
-avec ses auras de pouvoir rouges aux mains et aux pieds) qu'on déplace dans un monde ouvert.
+Jeu 3D avec mes propres minifigs LEGO. Prototype v0.2 : écran de choix des persos, puis on se déplace dans un monde ouvert.
+
+Persos :
+- **Jor-El** : armure or, cape marron, auras de pouvoir rouges aux mains et aux pieds
+- **Cyborg** : robot à capuche, armure blanche/bleue/orange, aura de glace dans la main droite
 
 ## Télécharger
 APK Android : [`dist/lego-powers.apk`](dist/lego-powers.apk) — l'installer sur le téléphone (autoriser « sources inconnues »).
